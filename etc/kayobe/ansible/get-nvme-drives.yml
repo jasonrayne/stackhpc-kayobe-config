@@ -1,0 +1,94 @@
+---
+- name: Gather unique NVMe disk models
+  hosts: overcloud
+  gather_facts: no
+  tasks:
+    - name: Retrieve NVMe device information
+      command: "nvme list -o json"
+      register: nvme_list
+      changed_when: false
+      become: true
+
+    - name: Parse NVMe device model names
+      set_fact:
+        nvme_models: "{{ nvme_models | default([]) + [item.ModelNumber] }}"
+      loop: "{{ nvme_list.stdout | from_json | json_query('Devices[].{ModelNumber: ModelNumber}') }}"
+      changed_when: false
+
+    - name: Set unique NVMe models as host facts
+      set_fact:
+        unique_nvme_models: "{{ nvme_models | unique }}"
+      run_once: true
+
+- name: Update or create dwpd-ratings.yml
+  hosts: localhost
+  gather_facts: no
+  tasks:
+    - name: Aggregate unique NVMe models from all overcloud hosts
+      set_fact:
+        all_nvme_models: "{{ all_nvme_models | default([]) | union(hostvars[item].unique_nvme_models | default([])) }}"
+      with_items: "{{ groups['overcloud'] }}"
+      run_once: true
+
+    - name: Ensure dwpd-ratings.yml exists
+      stat:
+        path: "{{ kayobe_env_config_path }}/dwpd-ratings.yml"
+      register: dwpd_ratings_stat
+      run_once: true
+
+    - name: Load existing dwpd-ratings.yml
+      set_fact:
+        existing_dwpd_yml: "{{ lookup('file', kayobe_env_config_path ~ '/dwpd-ratings.yml') | from_yaml }}"
+      when: dwpd_ratings_stat.stat.exists
+      run_once: true
+
+    - name: Convert existing YAML array into a dictionary
+      set_fact:
+        dwpd_lookup: "{{ dwpd_lookup | default({}) | combine({ item.model_name: item.rated_dwpd }) }}"
+      loop: "{{ existing_dwpd_yml.stackhpc_dwpd_ratings | default([]) }}"
+      loop_control:
+        label: "{{ item.model_name }}"
+      run_once: true
+
+
+    - name: Get list of existing model names
+      set_fact:
+        existing_model_names: "{{ existing_dwpd_yml.stackhpc_dwpd_ratings|default([]) | map(attribute='model_name') | list }}"
+      run_once: true
+
+    - name: Combine old + new model names
+      set_fact:
+        combined_models: "{{ existing_model_names | union(all_nvme_models | default([])) | unique }}"
+      run_once: true
+
+    - name: DEBUG
+      debug:
+        msg: "{{ dwpd_lookup[item] }}"
+      with_items: "{{ combined_models }}"
+      run_once: true
+
+    - name: Build updated list for stackhpc_dwpd_ratings
+      set_fact:
+        new_dwpd_list: >-
+          {{ new_dwpd_list | default([]) + [{
+            'model_name': item,
+            'rated_dwpd': dwpd_lookup[item] | default(1)
+          }] }}
+      with_items: "{{ combined_models }}"
+      loop_control:
+        loop_var: item
+      run_once: true
+
+    - name: Write updated dwpd-ratings.yml
+      copy:
+        content: "{{ {'stackhpc_dwpd_ratings': new_dwpd_list} | to_nice_yaml }}"
+        dest: "{{ kayobe_env_config_path }}/dwpd-ratings.yml"
+      run_once: true
+
+    - name: Show updated dwpd-ratings.yml contents
+      debug:
+        msg:
+          - "Updated local dwpd-ratings.yml contents"
+          - "{{ {'stackhpc_dwpd_ratings': new_dwpd_list} | to_nice_yaml }}"
+          - "PLEASE REVIEW AND COMMIT {{ kayobe_env_config_path }}/dwpd-ratings.yml TO VERSION CONTROL."
+      run_once: true

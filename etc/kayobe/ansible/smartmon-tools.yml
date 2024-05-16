@@ -1,7 +1,6 @@
 ---
-- name: Install and set up smartmon-tools
+- name: Install and set up SMART monitoring tools
   hosts: overcloud
-
   tasks:
     - name: Ensure smartmontools, jq, nvme-cli and cron/cronie are installed
       ansible.builtin.package:
@@ -53,3 +52,35 @@
         - smartmon
         - nvmemon
       become: true
+
+- name: Gather NVMe drives and generate dwpd ratings
+  import_playbook: get-nvme-drives.yml
+  when: create_dwpd_ratings | default(false)
+
+- hosts: overcloud
+  gather_facts: false
+  tasks:
+    - name: Convert the stackhpc_dwpd_ratings variable to JSON
+      set_fact:
+        dwpd_ratings_json: "{{ stackhpc_dwpd_ratings | default([]) | to_json }}"
+      run_once: true
+      when: stackhpc_dwpd_ratings is defined
+
+    - name: Ensure /opt/kayobe/etc/monitoring directory exists
+      become: true
+      file:
+        path: /opt/kayobe/etc/monitoring
+        state: directory
+        mode: '0755'
+      when: stackhpc_dwpd_ratings is defined
+
+    - name: Copy JSON file to remote
+      become: true
+      copy:
+        content: "{{ dwpd_ratings_json }}"
+        dest: "/opt/kayobe/etc/monitoring/dwpd_ratings.json"
+        owner: root
+        group: root
+        mode: '0644'
+      run_once: true
+      when: stackhpc_dwpd_ratings is defined

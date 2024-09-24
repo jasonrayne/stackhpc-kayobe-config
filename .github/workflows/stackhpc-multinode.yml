@@ -52,7 +52,7 @@ name: Multinode
 jobs:
   multinode:
     name: Multinode
-    uses: stackhpc/stackhpc-openstack-gh-workflows/.github/workflows/multinode.yml@1.1.0
+    uses: stackhpc/stackhpc-openstack-gh-workflows/.github/workflows/multinode.yml@alex-test-branch
     with:
       multinode_name: ${{ inputs.multinode_name }}
       os_distribution: ${{ inputs.os_distribution }}
@@ -66,6 +66,6 @@ jobs:
       ssh_key: ${{ inputs.ssh_key }}
       stackhpc_kayobe_config_version: ${{ github.ref_name }}
       # NOTE(upgrade): Reference the PREVIOUS release here.
-      stackhpc_kayobe_config_previous_version: stackhpc/2023.1
+      stackhpc_kayobe_config_previous_version: upgrade-prerequisites
       terraform_kayobe_multinode_version: ${{ inputs.terraform_kayobe_multinode_version }}
     secrets: inherit

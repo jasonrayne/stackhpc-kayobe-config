@@ -216,11 +216,40 @@ stackhpc_pulp_sync_rocky_9: "{{ os_distribution == 'rocky' }}"
 stackhpc_pulp_repo_rocky_9_minor_version: 4
 # Rocky 9 Snapshot versions. The defaults use the appropriate version from
 # pulp-repo-versions.yml for the selected minor release.
-stackhpc_pulp_repo_rocky_9_baseos_version: "{{ lookup('vars', 'stackhpc_pulp_repo_rocky_9_' ~ stackhpc_pulp_repo_rocky_9_minor_version ~ '_baseos' ~ ('_aarch64' if kolla_base_arch == 'aarch64' else '') ~ '_version') }}"
-stackhpc_pulp_repo_rocky_9_appstream_version: "{{ lookup('vars', 'stackhpc_pulp_repo_rocky_9_' ~ stackhpc_pulp_repo_rocky_9_minor_version ~ '_appstream' ~ ('_aarch64' if kolla_base_arch == 'aarch64' else '') ~ '_version') }}"
-stackhpc_pulp_repo_rocky_9_extras_version: "{{ lookup('vars', 'stackhpc_pulp_repo_rocky_9_' ~ stackhpc_pulp_repo_rocky_9_minor_version ~ '_extras' ~ ('_aarch64' if kolla_base_arch == 'aarch64' else '') ~ '_version') }}"
-stackhpc_pulp_repo_rocky_9_crb_version: "{{ lookup('vars', 'stackhpc_pulp_repo_rocky_9_' ~ stackhpc_pulp_repo_rocky_9_minor_version ~ '_crb' ~ ('_aarch64' if kolla_base_arch == 'aarch64' else '') ~ '_version') }}"
-stackhpc_pulp_repo_rocky_9_highavailability_version: "{{ lookup('vars', 'stackhpc_pulp_repo_rocky_9_' ~ stackhpc_pulp_repo_rocky_9_minor_version ~ '_highavailability' ~ ('_aarch64' if kolla_base_arch == 'aarch64' else '') ~ '_version') }}"
+# Define the architecture suffix
+arch_suffix: "{{ '_aarch64' if kolla_base_arch == 'aarch64' else '' }}"
+
+# Lists of repositories
+rocky_minor_version_repos:
+  - baseos
+  - appstream
+  - extras
+  - crb
+  - highavailability
+
+rocky_multiarch_repos:
+  - stackhpc_pulp_repo_rhel9_rabbitmq_erlang
+  - stackhpc_pulp_repo_centos_stream_9_nfv_openvswitch
+  - stackhpc_pulp_repo_centos_stream_9_openstack_caracal
+  - stackhpc_pulp_repo_centos_stream_9_opstools
+  - stackhpc_pulp_repo_centos_stream_9_storage_ceph_reef
+  - stackhpc_pulp_repo_centos_stream_9_docker
+  - stackhpc_pulp_repo_rhel_9_treasuredata_5
+  - stackhpc_pulp_repo_rhel_9_mariadb_10_11
+  - stackhpc_pulp_repo_rhel_9_influxdb
+  - stackhpc_pulp_repo_epel_9
+  - stackhpc_pulp_repo_rocky_9_sig_security_common
+
+# Set Rocky repository versions
+{% for repo in rocky_minor_version_repos %}
+stackhpc_pulp_repo_rocky_9_{{ stackhpc_pulp_repo_rocky_9_minor_version }}_{{ repo }}_version: >-
+  {{ lookup('vars', 'stackhpc_pulp_repo_rocky_9_' ~ stackhpc_pulp_repo_rocky_9_minor_version ~ '_' ~ repo ~ arch_suffix ~ '_version') }}
+{% endfor %}
+
+# Set Rocky multiarch repository versions
+{% for repo in rocky_multiarch_repos %}
+{{ repo }}_version: "{{ lookup('vars', repo ~ arch_suffix ~ '_version') }}"
+{% endfor %}
 
 # Whether to sync packages common to all RHEL 9 derivatives.
 stackhpc_pulp_sync_el_9: "{{ stackhpc_pulp_sync_rocky_9 | bool }}"

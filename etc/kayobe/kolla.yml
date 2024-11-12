@@ -147,14 +147,22 @@ kolla_sources:
     type: git
     location: https://github.com/stackhpc/networking-generic-switch.git
     reference: stackhpc/{{ openstack_release }}
-  octavia-api-plugin-ovn-octavia-provider:
+  neutron-server-plugin-networking-mlnx:
     type: git
-    location: https://github.com/stackhpc/ovn-octavia-provider.git
+    location: https://github.com/stackhpc/networking-mlnx
     reference: stackhpc/{{ openstack_release }}
-  octavia-driver-agent-plugin-ovn-octavia-provider:
+  nova-compute-plugin-networking-mlnx:
     type: git
-    location: https://github.com/stackhpc/ovn-octavia-provider.git
+    location: https://github.com/stackhpc/networking-mlnx
     reference: stackhpc/{{ openstack_release }}
+  octavia-base:
+    type: git
+    location: https://github.com/stackhpc/octavia.git
+    reference: stackhpc/{{ openstack_release }}
+  blazar-base:
+    type: git
+    location: https://github.com/stackhpc/blazar
+    reference: stackhpc/master
 
 ###############################################################################
 # Kolla image build configuration.
@@ -289,6 +297,7 @@ kolla_build_blocks:
     {% for repo in base_centos_repo_overrides_post_yum_list %}
         sed -i -e '/\[{{ repo.tag }}\]/,/^\[/ s/^\(mirrorlist *=.*\)/#\1/g' \
                -e '/\[{{ repo.tag }}\]/,/^\[/ s/^[# ]*\(baseurl *=.*\)/#\1/g' \
+               -e '/\[{{ repo.tag }}\]/,/^\[/ s/^[ \t]*\(https.*\)/#\1/g' \
                -e '/\[{{ repo.tag }}\]/,/^\[/ s/^[# ]*\(metalink *=.*\)/#\1/g' \
                -e '/\[{{ repo.tag }}\]/,/^\[/ s|^\(name.*\)|\1\nbaseurl={{ repo.url }}|' /etc/yum.repos.d/{{ repo.file }}{% if not loop.last %} &&{% endif %} \
     {% endfor %}
@@ -347,6 +356,12 @@ kolla_build_blocks:
     {% set magnum_capi_packages = ['magnum-capi-helm==1.1.0'] %}
     RUN {{ macros.install_pip(magnum_capi_packages | customizable("pip_packages")) }}
     {% endraw %}
+  nova_compute_header:
+    # See: https://review.opendev.org/c/openstack/kolla/+/878663/1/docker/neutron/neutron-mlnx-agent/Dockerfile.j2
+    RUN sed -e "s/^pyzmq===20.0.0/pyzmq==21.*/g" -i /requirements/upper-constraints.txt
+  neutron_server_header:
+    # See: https://review.opendev.org/c/openstack/kolla/+/878663/1/docker/neutron/neutron-mlnx-agent/Dockerfile.j2
+    RUN sed -e "s/^pyzmq===20.0.0/pyzmq==21.*/g" -i /requirements/upper-constraints.txt
   prometheus_alertmanager_repository_version: | # 2023.1 kolla has 0.24.0
     {% raw %}
     ARG prometheus_alertmanager_version=0.26.0
@@ -439,6 +454,14 @@ kolla_build_customizations_common:
     - /additions/*
   ironic_inspector_pip_packages_append:
     - /additions/*
+  neutron_server_packages_append:
+    - python3-libvirt
+    - python3-ethtool
+  nova_compute_packages_append:
+    - python3-libvirt
+    - python3-ethtool
+  neutron_mlnx_agent_pip_packages_override:
+    - networking-mlnx@git+https://github.com/stackhpc/networking-mlnx@stackhpc/{{ openstack_release }}
 
 kolla_build_customizations_rocky:
   kolla_toolbox_packages_remove:

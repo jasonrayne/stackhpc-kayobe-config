@@ -356,7 +356,6 @@ kolla_build_customizations_common:
   bifrost_base_pip_packages_append:
     - /additions/*
   grafana_plugins_append:
-    - grafana-piechart-panel
     - vonage-status-panel
   ironic_inspector_pip_packages_append:
     - /additions/*

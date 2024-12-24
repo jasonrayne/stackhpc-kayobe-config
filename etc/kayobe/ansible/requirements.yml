@@ -1,7 +1,8 @@
 ---
 collections:
-  - name: stackhpc.cephadm
-    version: 1.18.0
+  - name: https://github.com/stackhpc/ansible-collection-cephadm.git
+    version: install-retries                                                                   
+    type: git
   # NOTE: Pinning pulp.squeezer to 0.0.13 because 0.0.14+ depends on the
   # pulp_glue Python library being installed.
   - name: pulp.squeezer

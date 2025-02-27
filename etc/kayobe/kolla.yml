@@ -125,6 +125,10 @@ kolla_sources:
     type: git
     location: https://github.com/stackhpc/cloudkitty.git
     reference: stackhpc/{{ openstack_release }}
+  glance-base:
+    type: git
+    location: https://github.com/stackhpc/glance
+    reference: stackhpc/{{ openstack_release }}
   horizon-plugin-cloudkitty-dashboard:
     type: git
     location: https://github.com/stackhpc/cloudkitty-dashboard.git
@@ -339,12 +343,6 @@ kolla_build_blocks:
     ENV TOX_CONSTRAINTS_FILE=/requirements/upper-constraints.txt
   ironic_inspector_header: |
     ADD additions-archive /
-  magnum_base_footer: |
-    RUN curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | head -n -1 | bash
-    {% raw %}
-    {% set magnum_capi_packages = ['magnum-capi-helm==1.1.0'] %}
-    RUN {{ macros.install_pip(magnum_capi_packages | customizable("pip_packages")) }}
-    {% endraw %}
 
 # Dict mapping image customization variable names to their values.
 # Each variable takes the form:
@@ -355,10 +353,16 @@ kolla_build_blocks:
 kolla_build_customizations_common:
   bifrost_base_pip_packages_append:
     - /additions/*
+  glance_base_pip_packages_override:
+    - "/glance"
+    - "glance_store[cinder,vmware,swift,s3]@git+https://github.com/stackhpc/glance_store@stackhpc/4.7.0.3"
   grafana_plugins_append:
     - vonage-status-panel
   ironic_inspector_pip_packages_append:
     - /additions/*
+  magnum_base_pip_packages_override:
+    - /magnum[osprofiler]
+    - magnum-capi-helm==1.2.0
   neutron_server_packages_append:
     - python3-libvirt
     - python3-ethtool
@@ -634,7 +638,7 @@ kolla_enable_heat: false
 #kolla_enable_influxdb:
 #kolla_enable_ironic:
 #kolla_enable_ironic_neutron_agent:
-kolla_enable_ironic_prometheus_exporter: false
+#kolla_enable_ironic_prometheus_exporter:
 #kolla_enable_iscsid:
 #kolla_enable_keepalived:
 #kolla_enable_keystone:
@@ -693,6 +697,7 @@ kolla_enable_mariabackup: True
 #kolla_enable_openvswitch:
 #kolla_enable_osprofiler:
 kolla_enable_ovn: true
+#kolla_enable_ovn_sb_db_relay:
 #kolla_enable_ovs_dpdk:
 #kolla_enable_placement:
 kolla_enable_prometheus: true

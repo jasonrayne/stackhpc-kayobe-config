@@ -6,3 +6,6 @@ kolla_image_tags:
   openstack:
     rocky-9: 2024.1-rocky-9-20250326T134749
     ubuntu-jammy: 2024.1-ubuntu-jammy-20250326T134749
+  bifrost:
+    rocky-9: 2024.1-rocky-9-20250325T141125
+    ubuntu-jammy: 2024.1-ubuntu-jammy-20250325T141125

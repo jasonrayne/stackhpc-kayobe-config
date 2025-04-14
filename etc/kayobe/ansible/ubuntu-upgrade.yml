@@ -63,6 +63,10 @@
           deb {{ stackhpc_repo_ubuntu_noble_security_url }} noble-security main restricted universe multiverse
       become: true
 
+    - name: Enusre /tmp is mounted with exec
+      ansible.builtin.command: sudo mount -o remount,exec /tmp
+      become: true
+
     - name: Do release upgrade
       ansible.builtin.command: do-release-upgrade -f DistUpgradeViewNonInteractive
       become: true

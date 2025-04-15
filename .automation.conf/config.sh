@@ -29,7 +29,6 @@ if [ ! -z ${KAYOBE_ENVIRONMENT:+x} ]; then
     # https://bugs.launchpad.net/ubuntu/+source/linux-meta-oracle-6.8/+bug/2104178
     # which blocks attaching interfaces to neutron routers in OVS system.
     # Ignoring sets of tests failing because of this until kernel fix is released.
-    export KAYOBE_AUTOMATION_TEMPEST_SKIPLIST=ci-aio-tempest-refstack
   fi
 
   if [[ "$KAYOBE_ENVIRONMENT" =~ "ci-multinode" ]]; then
